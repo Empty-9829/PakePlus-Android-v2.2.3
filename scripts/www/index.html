@@ -1,11 +1,320 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字朗读助手（增强版）</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "微软雅黑", Arial, sans-serif;
+        }
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 15px;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .title {
+            text-align: center;
+            color: #333;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        #fileInput {
+            padding: 12px;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #fileInput:hover {
+            border-color: #4285f4;
+            background-color: #f8f9fa;
+        }
+        textarea {
+            height: 280px;
+            padding: 15px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            resize: none;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1);
+        }
+        .voice-control {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .select-box, .slider-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-size: 14px;
+            color: #666;
+        }
+        select {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            outline: none;
+            background-color: #fff;
+        }
+        .slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #eee;
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #4285f4;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .slider::-webkit-slider-thumb:hover {
+            background-color: #3367d6;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            flex: 1;
+            min-width: 100px;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #fff;
+            font-weight: 500;
+        }
+        .start-btn {
+            background-color: #4285f4;
+        }
+        .pause-btn {
+            background-color: #fbbc05;
+        }
+        .stop-btn {
+            background-color: #ea4335;
+        }
+        .clear-btn {
+            background-color: #9aa0a6;
+        }
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .tip {
+            text-align: center;
+            font-size: 13px;
+            color: #999;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="title">文字朗读助手（增强版）</h2>
+        
+        <!-- 导入文件按钮 -->
+        <input type="file" id="fileInput" accept=".txt">
+        <!-- 文字显示区域 -->
+        <textarea id="textContent" placeholder="导入TXT文本文件后，内容会显示在这里；也可直接输入文字..."></textarea>
+        
+        <!-- 语音控制区域（新增语速、音调调节） -->
+        <div class="voice-control">
+            <div class="select-box">
+                <label for="voiceSelect">选择朗读语音</label>
+                <select id="voiceSelect"></select>
+            </div>
+            
+            <div class="slider-box">
+                <label for="rateSlider">语速（当前：1.0倍）</label>
+                <input type="range" id="rateSlider" class="slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+            
+            <div class="slider-box">
+                <label for="pitchSlider">音调（当前：1.0倍）</label>
+                <input type="range" id="pitchSlider" class="slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+        </div>
+        
+        <!-- 控制按钮组（新增清空按钮） -->
+        <div class="btn-group">
+            <button class="start-btn" onclick="startSpeak()">▶ 开始朗读</button>
+            <button class="pause-btn" onclick="pauseSpeak()">⏸ 暂停</button>
+            <button class="stop-btn" onclick="stopSpeak()">⏹ 停止</button>
+            <button class="clear-btn" onclick="clearText()">🗑 清空文本</button>
+        </div>
+        
+        <p class="tip">支持中文朗读 | 纯本地运行，保护隐私 | 适配手机/电脑</p>
+    </div>
+
+    <script>
+        // 核心：浏览器自带语音合成API（增强版新增语速、音调控制）
+        const synth = window.speechSynthesis;
+        let voices = [];
+        // 获取DOM元素
+        const textArea = document.getElementById('textContent');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateSlider = document.getElementById('rateSlider');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const rateLabel = rateSlider.previousElementSibling;
+        const pitchLabel = pitchSlider.previousElementSibling;
+
+        // 1. 加载所有语音（优化加载逻辑，避免语音加载失败）
+        function loadVoices() {
+            voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+            // 筛选支持中文的语音，优先显示
+            const chineseVoices = voices.filter(voice => voice.lang.includes('zh'));
+            const otherVoices = voices.filter(voice => !voice.lang.includes('zh'));
+            
+            // 添加中文语音
+            if (chineseVoices.length > 0) {
+                chineseVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name}（中文）`;
+                    option.value = voice.name;
+                    voiceSelect.appendChild(option);
+                });
+            } else {
+                // 若无中文语音，添加提示
+                const option = document.createElement('option');
+                option.textContent = '无中文语音，选择其他语音';
+                option.value = '';
+                voiceSelect.appendChild(option);
+            }
+            
+            // 添加其他语言语音
+            if (otherVoices.length > 0) {
+                const option = document.createElement('option');
+                option.textContent = '--- 其他语言语音 ---';
+                option.disabled = true;
+                voiceSelect.appendChild(option);
+                
+                otherVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name}（${voice.lang}）`;
+                    option.value = voice.name;
+                    voiceSelect.appendChild(option);
+                });
+            }
+        }
+
+        // 2. 导入txt文件（优化中文编码，避免乱码）
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                textArea.value = event.target.result;
+                // 自动滚动到文本顶部
+                textArea.scrollTop = 0;
+            };
+            // 优先UTF-8编码，兼容多种txt格式
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        // 3. 语速调节（实时显示当前语速）
+        rateSlider.addEventListener('input', function() {
+            rateLabel.textContent = `语速（当前：${this.value}倍）`;
+        });
+
+        // 4. 音调调节（实时显示当前音调）
+        pitchSlider.addEventListener('input', function() {
+            pitchLabel.textContent = `音调（当前：${this.value}倍）`;
+        });
+
+        // 5. 开始朗读（增强版：支持语速、音调设置，避免重复朗读）
+        function startSpeak() {
+            const text = textArea.value.trim();
+            if (!text) {
+                alert('请先导入或输入文字再朗读！');
+                return;
+            }
+            
+            // 停止当前朗读，避免重复
+            synth.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            // 选择语音
+            const selectedVoice = voices.find(voice => voice.name === voiceSelect.value);
+            if (selectedVoice) utterance.voice = selectedVoice;
+            
+            // 设置语速和音调（新增功能）
+            utterance.rate = parseFloat(rateSlider.value);
+            utterance.pitch = parseFloat(pitchSlider.value);
+            
+            // 朗读结束提示
+            utterance.onend = function() {
+                alert('朗读完成！');
+            };
+            
+            synth.speak(utterance);
+        }
+
+        // 6. 暂停朗读
+        function pauseSpeak() {
+            if (synth.speaking) {
+                synth.pause();
+            } else {
+                alert('当前未在朗读！');
+            }
+        }
+
+        // 7. 停止朗读
+        function stopSpeak() {
+            synth.cancel();
+        }
+
+        // 8. 清空文本（新增功能）
+        function clearText() {
+            textArea.value = '';
+            // 停止当前朗读（若正在朗读）
+            synth.cancel();
+        }
+
+        // 初始化（优化初始化逻辑，确保语音加载成功）
+        loadVoices();
+        // 监听语音加载变化，重新加载语音列表
+        synth.onvoiceschanged = loadVoices;
+    </script>
+</body>
 </html>
